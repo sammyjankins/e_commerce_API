@@ -1,9 +1,9 @@
 from bson.objectid import ObjectId
 from fastapi import HTTPException, status, Body, Depends, APIRouter
 
-from apps.auth.auth_bearer import JWTBearer, get_jwt_subject
+from apps.auth.auth_bearer import JWTBearer, get_jwt_subject, get_current_admin_user
 from apps.auth.auth_handler import sign_jwt
-from apps.user.models import UserSchema, UserLoginSchema, UserUpdateSchema
+from apps.user.models import UserSchema, UserLoginSchema, UserUpdateSchema, UserRoleSchema
 from db import db
 
 router = APIRouter()
@@ -47,8 +47,19 @@ async def get_user(user_id: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
 
-@router.put("/{user_id}", dependencies=[Depends(JWTBearer())])
-async def update_user(user_id: str, user: UserUpdateSchema, current_user: dict = Depends(get_jwt_subject)):
+@router.put("/{user_id}/edit_role", dependencies=[Depends(JWTBearer()), Depends(get_current_admin_user)])
+async def update_user_role(user_id: str, user: UserRoleSchema):
+    user_dict = user.dict(exclude_unset=True)
+    result = users_collection.update_one({"_id": ObjectId(user_id)}, {"$set": user_dict})
+    if result.modified_count == 1:
+        user_dict["_id"] = user_id
+        return user_dict
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+
+@router.put("/{user_id}/edit_data", dependencies=[Depends(JWTBearer())])
+async def update_user_data(user_id: str, user: UserUpdateSchema, current_user: dict = Depends(get_jwt_subject)):
     if user_id != str(current_user.get("_id")):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You can only update your own user data")
     user_dict = user.dict(exclude_unset=True)

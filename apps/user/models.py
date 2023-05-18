@@ -16,7 +16,7 @@ class UserSchema(BaseModel):
             "example": {
                 "username": "Joe Doe",
                 "password": "any",
-                "fullname": "Joe Doe",
+                "full_name": "Joe Doe",
                 "email": "joe@xyz.com",
                 "phone": "8-999-888-77-66",
                 "is_admin": "False",
@@ -25,13 +25,11 @@ class UserSchema(BaseModel):
 
 
 class UserRoleSchema(BaseModel):
-    email: EmailStr = Field(...)
     is_admin: bool = False
 
     class Config:
         schema_extra = {
             "example": {
-                "email": "joe@xyz.com",
                 "is_admin": "False",
             }
         }
